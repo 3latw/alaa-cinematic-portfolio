@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MotionConfig } from "motion/react";
@@ -61,20 +61,43 @@ describe("keyboard and missing media behavior", () => {
     ).toContain("mailto:3latawalbeh@gmail.com");
   });
 });
-describe("portrait media integration with simulated decoder", () => {
-  it("seeks actual currentTime for absolute pointer X and keyboard slider input, and handles media failure", () => {
+describe("portrait integration without video decoding", () => {
+  it("shows a frontal poster even when video playback would be blocked", () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockRejectedValue(new Error("NotAllowedError"));
+    const { container } = render(<Portrait available />);
+    expect(screen.getByRole("img").getAttribute("src")).toContain(
+      "frame-024.jpg",
+    );
+    expect(container.querySelector("video")).toBeNull();
+    expect(play).not.toHaveBeenCalled();
+  });
+  it("loads real frame URLs for absolute pointer X, slider and zero-button touch input", () => {
     let callback: FrameRequestCallback = () => {};
     vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
       callback = fn;
       return 1;
     });
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
-    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    vi.stubGlobal(
+      "Image",
+      class {
+        onload: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        private value = "";
+        set src(value: string) {
+          this.value = value;
+          this.onload?.();
+        }
+        get src() {
+          return this.value;
+        }
+      },
+    );
     const { container } = render(<Portrait available />);
-    const video = container.querySelector("video")!;
-    Object.defineProperty(video, "duration", { value: 3.87 });
-    fireEvent.loadedData(video);
-    expect(video.currentTime).toBeCloseTo(1.915);
+    const image = screen.getByRole("img");
+    fireEvent.load(image);
     const pointer = (x: number) => {
       const event = new Event("pointermove");
       Object.assign(event, { pointerType: "mouse", clientX: x });
@@ -84,31 +107,51 @@ describe("portrait media integration with simulated decoder", () => {
     const settle = () => {
       for (let i = 0; i < 60; i++) {
         clock += 16;
-        callback(clock);
+        act(() => callback(clock));
       }
     };
     pointer(0);
     settle();
-    expect(video.currentTime).toBeLessThan(0.04);
+    expect(image.getAttribute("src")).toContain("frame-000.jpg");
     pointer(window.innerWidth / 2);
     settle();
-    expect(video.currentTime).toBeCloseTo(1.915, 1);
+    expect(image.getAttribute("src")).toContain("frame-024.jpg");
     pointer(window.innerWidth);
     settle();
-    expect(video.currentTime).toBeGreaterThan(3.79);
+    expect(image.getAttribute("src")).toContain("frame-048.jpg");
     fireEvent.change(screen.getByRole("slider"), { target: { value: "0" } });
     settle();
-    expect(video.currentTime).toBeLessThan(0.04);
+    expect(image.getAttribute("src")).toContain("frame-000.jpg");
     const stage = container.querySelector(".portrait-stage")!;
     vi.spyOn(stage, "getBoundingClientRect").mockReturnValue({
-      left: 0, width: 400,
+      left: 0,
+      width: 400,
     } as DOMRect);
-    const swipe = new Event("pointermove", { bubbles: true });
-    Object.assign(swipe, { pointerType: "touch", buttons: 1, clientX: 400 });
-    fireEvent(stage, swipe);
+    const touch = (type: string, x: number) => {
+      const event = new Event(type, { bubbles: true });
+      Object.assign(event, {
+        pointerType: "touch",
+        pointerId: 7,
+        buttons: 0,
+        clientX: x,
+      });
+      fireEvent(stage, event);
+    };
+    touch("pointerdown", 0);
+    touch("pointermove", 400);
     settle();
-    expect(video.currentTime).toBeGreaterThan(3.79);
-    fireEvent.error(video);
-    expect(screen.getByText("Portrait film coming soon")).toBeTruthy();
+    expect(image.getAttribute("src")).toContain("frame-048.jpg");
+    touch("pointerup", 400);
+    touch("pointermove", 0);
+    settle();
+    expect(image.getAttribute("src")).toContain("frame-048.jpg");
+  });
+  it("shows a clear fallback when the poster itself cannot load", () => {
+    render(<Portrait available />);
+    fireEvent.error(screen.getByRole("img"));
+    expect(screen.getByText("Portrait temporarily unavailable")).toBeTruthy();
+    expect((screen.getByRole("slider") as HTMLInputElement).disabled).toBe(
+      true,
+    );
   });
 });

@@ -148,6 +148,7 @@ p {
   animation: pulse 2.3s infinite;
 }
 .intro {
+  height: 100vh;
   height: 100svh;
   min-height: 540px;
   position: relative;
@@ -1449,7 +1450,7 @@ body {
 }
 /* The owner portrait is a large, softly masked part of the hero itself. */
 .hero {
-  --portrait-height: min(76svh, 800px);
+  --portrait-height: min(76vh, 800px);
   position: relative;
   isolation: isolate;
   min-height: 850px;
@@ -1555,6 +1556,9 @@ body {
   transition: opacity 1.1s ease;
 }
 .hero-portrait.portrait-ready .portrait-video {
+  opacity: 1;
+}
+.hero-portrait .portrait-frame {
   opacity: 1;
 }
 .hero-portrait .portrait-bottom {

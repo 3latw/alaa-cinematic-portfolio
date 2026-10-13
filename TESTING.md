@@ -3,13 +3,13 @@
 ## Automated checks
 
 - `npm install`: completed; lockfile committed.
-- `npm test`: 10 tests across 4 files. Covers absolute left/center/right time mapping, smoothing, input clamping, simulated media `currentTime` integration, touch swipe and slider input, decoder failure, missing video/CV behavior, modal focus loops/restoration, staged intro progression/skip, and immediate reduced-motion readiness.
+- `npm test`: 16 tests across 5 files. Covers absolute left/center/right frame mapping, smoothing, input clamping, frame-URL integration, zero-button touch swipes, slider input, blocked-video independence, missing/failed poster and CV handling, modal focus loops/restoration, intro progression/skip, reduced-motion readiness, latest-frame prioritization, failure retention, disposal, and the six-image cache bound.
 - `npm run build`: TypeScript and production build passed.
 - Repository-path production build with `VITE_BASE_PATH=/alaa-cinematic-portfolio/`: passed.
 - Served that production build at `/alaa-cinematic-portfolio/` and confirmed the intro, main site, and bundled JavaScript/CSS load under the repository base.
 - `npm audit`: zero vulnerabilities at verification time.
 
-The portrait integration test uses a **simulated HTMLMediaElement**, not the owner's film. It proves time seeking and UI behavior; it cannot prove real face direction or decode performance.
+The image loader is simulated in unit tests. Browser inspection additionally confirmed real JPEG decoding and switching from `frame-000.jpg` to `frame-048.jpg` using the native slider. The hero has no video element or media-playback dependency.
 
 ## Browser inspection
 
@@ -31,12 +31,18 @@ The owner supplied `IMG_6816.MP4`, which is now committed unchanged at `public/m
 - Replaced the framed portrait card with an enlarged video integrated into the top hero, soft radial masks, and gradient fades into the black background. Checked the revised desktop 1440×900 and mobile 390×844 layouts without horizontal overflow.
 - The 10 automated tests still cover input mapping, touch/slider behavior, missing or invalid media, modal navigation, and intro behavior.
 
+## iPhone compatibility correction
+
+The owner reported an empty portrait on an iPhone 11 Pro. The original file is H.264 High / yuv420p with AAC audio. The old hero waited for `loadeddata` and kept the video transparent until that event arrived, so a browser that withheld initial video decoding could display nothing. The exact phone failure was not reproduced on physical hardware.
+
+The hero now uses 49 real JPEG frames extracted locally from the unchanged MP4. The eager frontal poster is visible independently of video events. Frame loading is serialized and bounded to six retained images; failures keep the current image. Touch handling accepts a zero-button pointer and cancels on pointer-up/cancel. `vh` fallback avoids depending on `svh` support. Local browser inspection at 375×812 confirmed the full-body image decoded at 464×848, movement between the real endpoint frames, no video element, and no browser errors.
+
 ## Remaining asset/device checks
 
 The full-body layout revision uses `object-fit: contain` and the source aspect ratio, with an expanded studio-blue hero background fading into black. Desktop 1440×900 showed the whole video between y=106 and y=790. Mobile 390×844 showed the video ending at y=587.5 and the name starting below it at y=688.8. Minimum mobile 320×568 showed the video ending at y=560, with no horizontal overflow. The original video remains unchanged.
 
 - Verify swipe and slider on physical touch devices; the automated swipe test uses a simulated pointer event.
-- Confirm MP4 scrubbing latency, orientation, and cropping on iOS Safari and Android. Verify muted/paused behavior and no recurring playback.
+- Confirm the JPEG frame interaction on physical iOS Safari and Android, including low-power / data-saving modes. No autoplay or video-decoder permission is required by the new hero.
 - Confirm the real CV downloads successfully, opens as a valid PDF, and respects the GitHub Pages repository base.
 - Verify real project previews when supplied. Current cards truthfully present original artwork and COMING SOON status.
 

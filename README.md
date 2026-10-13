@@ -22,14 +22,16 @@ The owner's original `IMG_6816.MP4` is now included at `public/media/IMG_6816.MP
 
 - To replace the portrait, use **`public/media/IMG_6816.MP4`**. Exact casing matters on GitHub Pages. Prefer an H.264 MP4 with frequent keyframes and fast-start metadata for responsive seeking.
 - Add the real résumé at **`public/files/Alaa-Ziad-Tawalbeh-CV.pdf`**. No substitute résumé is generated.
-- Restart Vite / rebuild after adding either file. Vite checks availability when its config loads. Missing video renders original AT artwork and disabled controls; an invalid or undecodable video also falls back. Missing CV opens a request dialog instead of a broken download.
+- Regenerate the JPEG frames when replacing the portrait video, then restart Vite / rebuild. Vite checks the frontal frame's availability when its config loads. A missing or failed poster shows clear fallback artwork; individual failed movement frames keep the current picture visible. Missing CV opens a request dialog instead of a broken download.
 - Add future project videos, screenshots, descriptions, and source/demo URLs in **`src/data/content.ts`**. Media paths are relative to `public/`; absolute HTTPS URLs also work. All six cards deliberately keep their COMING SOON status. Preview videos have user-controlled playback, muted by default, with `preload="none"`.
 
 ## Portrait implementation
 
-Absolute mouse X across the viewport maps to a normalized 0–1 position: left → early frame, center → middle frame, right → late frame. A requestAnimationFrame loop smooths that position and seeks the paused video's **actual `currentTime`**, serializing seeks while the decoder is busy and avoiding the exact EOF. There is no CSS face rotation. Seeking stops when the stage is off screen or the tab is hidden. Touch users can swipe horizontally on the stage or use the labeled native range control; keyboard users can use arrow keys on that slider. Reduced motion keeps the center frame unless the slider is explicitly changed.
+Absolute mouse X across the viewport maps to 49 **real JPEG frames extracted from the original video**: left → early frame, center → middle frame, right → late frame. A requestAnimationFrame loop smooths that position. There is no CSS face rotation, autoplay, audio, video decoding, or reliance on a `loadeddata` event in the hero. The frontal poster is an eager, high-priority image; it stays visible while the next frame loads. This avoids an empty hero when iOS Safari does not prepare the paused video's first frame.
 
-Direct seeking was selected instead of pre-extracting a frame atlas: the supplied film is short and only about 631 KiB, avoiding extra downloads and decoded-image memory on mobile. Verify seeking on physical iOS Safari and low-end Android devices; if decoding is slow there, a small frame sequence can be generated as a follow-up.
+The loader starts only one image request at a time, prioritizes the latest requested frame, and retains at most six decoded images (about 9 MiB at 464×848). All 49 JPEG files total 1,154,465 bytes; only requested frames load. A failed frame keeps the previous image visible. Animation stops off screen or in a hidden tab. Touch swipes do not depend on `PointerEvent.buttons`, and the labeled native slider also works with touch and keyboard. Reduced motion stays on the frontal frame until the user explicitly moves a control. The original MP4 remains unchanged in the repository.
+
+Frames are stored in `public/media/portrait-frames-95647c1d/`, with a generated manifest at `src/data/portraitFrames.json`. To regenerate after replacing the video, install FFmpeg and ffprobe, then run `node scripts/extract-portrait-frames.mjs`. `FFMPEG_BIN` and `FFPROBE_BIN` can specify absolute executable paths. Extraction preserves the full source dimensions and records the source SHA-256; no external media service is used.
 
 ## Hosting (manual owner action)
 
