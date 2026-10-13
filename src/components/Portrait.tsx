@@ -68,7 +68,7 @@ export default function Portrait({
   };
   return (
     <div
-      className={`portrait-stage ${missing ? "is-placeholder" : ""}`}
+      className={`portrait-stage hero-portrait ${missing ? "is-placeholder" : ""} ${ready ? "portrait-ready" : ""}`}
       ref={stage}
       onPointerMove={(event) => {
         if (event.pointerType === "touch" && event.buttons > 0 && !missing) {
@@ -81,53 +81,45 @@ export default function Portrait({
         }
       }}
     >
-      <div className="portrait-top mono">
-        <span>PORTRAIT / 001</span>
-        <span>
-          {missing
-            ? "AWAITING FOOTAGE"
-            : ready
-              ? "INTERACTIVE"
-              : "PREPARING FRAME"}
-        </span>
-      </div>
-      {!missing && (
-        <video
-          ref={video}
-          className="portrait-video"
-          src={assetUrl(identity.portrait)}
-          preload="auto"
-          muted
-          playsInline
-          aria-label="Portrait of Alaa turning from left to right"
-          onLoadedData={(event) => {
-            event.currentTarget.pause();
-            event.currentTarget.currentTime = scrubTime(
-              0.5,
-              event.currentTarget.duration,
-            );
-            setReady(true);
-          }}
-          onError={() => setMissing(true)}
-        />
-      )}
-      {(missing || !ready) && (
-        <div className="portrait-placeholder">
-          <div className="portrait-reticle" aria-hidden="true">
-            <span>AT</span>
-            <i />
-            <i />
+      <div className="portrait-film">
+        {!missing && (
+          <video
+            ref={video}
+            className="portrait-video"
+            src={assetUrl(identity.portrait)}
+            preload="auto"
+            muted
+            playsInline
+            aria-label="Portrait of Alaa turning from left to right"
+            onLoadedData={(event) => {
+              event.currentTarget.pause();
+              event.currentTarget.currentTime = scrubTime(
+                0.5,
+                event.currentTarget.duration,
+              );
+              setReady(true);
+            }}
+            onError={() => setMissing(true)}
+          />
+        )}
+        {(missing || !ready) && (
+          <div className="portrait-placeholder">
+            <div className="portrait-reticle" aria-hidden="true">
+              <span>AT</span>
+              <i />
+              <i />
+            </div>
+            <p className="mono">
+              {missing ? "A FACE TO THE NAME." : "PREPARING PORTRAIT."}
+            </p>
+            <span>
+              {missing
+                ? "Portrait film coming soon"
+                : "A moment for the first frame"}
+            </span>
           </div>
-          <p className="mono">
-            {missing ? "A FACE TO THE NAME." : "PREPARING PORTRAIT."}
-          </p>
-          <span>
-            {missing
-              ? "Portrait film coming soon"
-              : "A moment for the first frame"}
-          </span>
-        </div>
-      )}
+        )}
+      </div>
       <div className="portrait-bottom">
         <div className="mono">
           <span>LEFT</span>

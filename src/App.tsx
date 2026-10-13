@@ -93,6 +93,7 @@ function Portfolio({ onReplay }: { onReplay: () => void }) {
           ref={hero}
           aria-labelledby="hero-heading"
         >
+          <Portrait />
           <div className="hero-meta mono">
             <span>
               <i className="status-dot" /> OPEN TO WHAT’S NEXT
@@ -131,7 +132,6 @@ function Portfolio({ onReplay }: { onReplay: () => void }) {
                 <span aria-hidden="true">↓</span> SCROLL TO DISCOVER
               </a>
             </Reveal>
-            <Portrait />
           </div>
         </section>
         <div className="manifesto-strip" aria-hidden="true">

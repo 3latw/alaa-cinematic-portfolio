@@ -18,9 +18,9 @@ The intro's 2.3-second progress is explicitly an introduction sequence, not a ne
 
 ## Owner media checklist
 
-Neither the owner portrait film nor the owner CV PDF was present in the new repository or attached to this task. They are **not included** in this PR.
+The owner's original `IMG_6816.MP4` is now included at `public/media/IMG_6816.MP4` (645,806 bytes, 464×848, approximately 3.87 seconds). It is displayed large at the top of the main site, with soft masks fading into the black hero background rather than a framed card. The CV PDF and project previews are still pending.
 
-- Add the original head-turn film at **`public/media/IMG_6816.MP4`**. Exact casing matters on GitHub Pages. Prefer an H.264 MP4 with frequent keyframes and fast-start metadata for responsive seeking.
+- To replace the portrait, use **`public/media/IMG_6816.MP4`**. Exact casing matters on GitHub Pages. Prefer an H.264 MP4 with frequent keyframes and fast-start metadata for responsive seeking.
 - Add the real résumé at **`public/files/Alaa-Ziad-Tawalbeh-CV.pdf`**. No substitute résumé is generated.
 - Restart Vite / rebuild after adding either file. Vite checks availability when its config loads. Missing video renders original AT artwork and disabled controls; an invalid or undecodable video also falls back. Missing CV opens a request dialog instead of a broken download.
 - Add future project videos, screenshots, descriptions, and source/demo URLs in **`src/data/content.ts`**. Media paths are relative to `public/`; absolute HTTPS URLs also work. All six cards deliberately keep their COMING SOON status. Preview videos have user-controlled playback, muted by default, with `preload="none"`.
@@ -29,13 +29,13 @@ Neither the owner portrait film nor the owner CV PDF was present in the new repo
 
 Absolute mouse X across the viewport maps to a normalized 0–1 position: left → early frame, center → middle frame, right → late frame. A requestAnimationFrame loop smooths that position and seeks the paused video's **actual `currentTime`**, serializing seeks while the decoder is busy and avoiding the exact EOF. There is no CSS face rotation. Seeking stops when the stage is off screen or the tab is hidden. Touch users can swipe horizontally on the stage or use the labeled native range control; keyboard users can use arrow keys on that slider. Reduced motion keeps the center frame unless the slider is explicitly changed.
 
-Direct seeking was selected instead of pre-extracting a frame atlas: the film is short, and this avoids extra downloads and decoded-image memory on mobile. Once the real film is supplied, test its keyframe spacing and seek latency on iOS Safari and low-end Android. If decoding is slow, generate a small frame sequence as a follow-up; no frames from an unavailable film are fabricated.
+Direct seeking was selected instead of pre-extracting a frame atlas: the supplied film is short and only about 631 KiB, avoiding extra downloads and decoded-image memory on mobile. Verify seeking on physical iOS Safari and low-end Android devices; if decoding is slow there, a small frame sequence can be generated as a follow-up.
 
 ## Hosting (manual owner action)
 
-CI runs the tests and production build on pull requests. Nothing automatically deploys on push or merge. The GitHub Pages workflow is **manual only**, honoring AGENTS.md's owner-approval requirement.
+CI runs the tests and production build on pull requests. The owner has authorized GitHub Pages publication at https://3latw.github.io/alaa-cinematic-portfolio/ . The current deployment serves the verified static build from the `gh-pages` branch. Updating that deployment requires a repository-base build and publishing the contents of `dist/` to `gh-pages`. Source changes on the feature branch do not automatically publish.
 
-After reviewing and merging the PR, the owner can enable **Settings → Pages → Source: GitHub Actions**, then run **Deploy portfolio (owner approval only)** on `main`. The workflow builds with `VITE_BASE_PATH=/alaa-cinematic-portfolio/`. For a custom domain or root hosting, leave the base unset (`/`). All bundled assets and owner media/download paths respect that base. `dist/` is the static deployment directory.
+After reviewing and merging the PR, the owner can optionally switch **Settings → Pages → Source: GitHub Actions**, then run **Deploy portfolio (owner approval only)** on `main`. That workflow is manual only and builds with `VITE_BASE_PATH=/alaa-cinematic-portfolio/`. For a custom domain or root hosting, leave the base unset (`/`). All bundled assets and owner media/download paths respect that base. `dist/` is the static deployment directory.
 
 ## Architecture and accessibility
 

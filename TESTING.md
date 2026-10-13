@@ -22,11 +22,20 @@ Inspected the actual running website in the Codex browser at desktop 1440×900, 
 - Corrected mobile name wrapping during QA. Checked document and heading bounds for horizontal overflow.
 - Browser console: no application errors or warnings at inspection time.
 
-## Required after the real media is supplied
+## Supplied video and revised hero
 
-- Confirm `IMG_6816.MP4` renders the owner's left-facing, frontal, and right-facing frames at mouse X 0 / 0.5 / 1; verify swipe and slider on physical touch devices.
+The owner supplied `IMG_6816.MP4`, which is now committed unchanged at `public/media/IMG_6816.MP4`: 645,806 bytes, 464×848, duration 3.866667 seconds, SHA-256 `95647c1d6c6b6b275f9a17ce80198d163aae5cdbdd1af8a5f700a619443670b0`.
+
+- The real MP4 decoded in the browser; `readyState=4`, no media error, `muted=true`, and `paused=true`.
+- Verified real seeking through the native slider: first frame near 0.025s, frontal frame near 1.889s, last frame near 3.816s. Observed actual head turns rather than a CSS rotation.
+- Replaced the framed portrait card with an enlarged video integrated into the top hero, soft radial masks, and gradient fades into the black background. Checked the revised desktop 1440×900 and mobile 390×844 layouts without horizontal overflow.
+- The 10 automated tests still cover input mapping, touch/slider behavior, missing or invalid media, modal navigation, and intro behavior.
+
+## Remaining asset/device checks
+
+- Verify swipe and slider on physical touch devices; the automated swipe test uses a simulated pointer event.
 - Confirm MP4 scrubbing latency, orientation, and cropping on iOS Safari and Android. Verify muted/paused behavior and no recurring playback.
 - Confirm the real CV downloads successfully, opens as a valid PDF, and respects the GitHub Pages repository base.
 - Verify real project previews when supplied. Current cards truthfully present original artwork and COMING SOON status.
 
-The missing owner video and CV prevent these asset-specific checks. This PR is ready for code/design review, not a claim that the missing owner assets were tested or shipped.
+The CV and future project previews are still missing. Physical iOS/Android testing has not been performed. The original owner video is now included and has been tested in the desktop browser.
