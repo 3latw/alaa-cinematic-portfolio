@@ -7,12 +7,12 @@ import {
 import { useReducedMotion } from "motion/react";
 import { assetUrl } from "../data/content";
 import frames from "../data/portraitFrames.json";
+import atlas from "../data/portraitAtlas.json";
 import { normalizedX, smoothPosition } from "../lib/scrub";
-import { frameIndex, PortraitFramePool } from "../lib/framePool";
+import { frameIndex, prepareAtlas } from "../lib/portraitAtlas";
 
-const frameUrl = (index: number) =>
-  assetUrl(`${frames.directory}/frame-${String(index).padStart(3, "0")}.jpg`);
-const poster = frameUrl(frames.posterIndex);
+const poster = assetUrl(atlas.poster);
+const atlasUrl = assetUrl(atlas.source);
 
 export default function Portrait({
   available = __PORTRAIT_AVAILABLE__,
@@ -24,12 +24,13 @@ export default function Portrait({
   const current = useRef(0.5);
   const explicitControl = useRef(false);
   const activeTouch = useRef<number | null>(null);
-  const pool = useRef<PortraitFramePool | null>(null);
   const [position, setPosition] = useState(50);
   const [ready, setReady] = useState(false);
   const [missing, setMissing] = useState(!available);
   const [failed, setFailed] = useState(false);
-  const [source, setSource] = useState(poster);
+  const [motionReady, setMotionReady] = useState(false);
+  const [motionFailed, setMotionFailed] = useState(false);
+  const [frame, setFrame] = useState(frames.posterIndex);
   const [visible, setVisible] = useState(true);
   const stage = useRef<HTMLDivElement>(null);
   const image = useRef<HTMLImageElement>(null);
@@ -37,7 +38,7 @@ export default function Portrait({
   useEffect(() => {
     if (!missing && image.current?.complete && image.current.naturalWidth > 0)
       setReady(true);
-  }, [source, missing]);
+  }, [missing]);
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -48,37 +49,41 @@ export default function Portrait({
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    if (missing) return;
-    const loader = new PortraitFramePool(frameUrl, setSource);
-    pool.current = loader;
-    return () => {
-      loader.dispose();
-      pool.current = null;
-    };
-  }, [missing]);
+    if (!available) return;
+    return prepareAtlas(
+      atlasUrl,
+      () => setMotionReady(true),
+      () => setMotionFailed(true),
+    );
+  }, [available]);
   useEffect(() => {
-    if (reduced || missing || !visible) return;
+    if (reduced || !motionReady || !visible) return;
     const move = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".portrait-bottom")
+      )
+        return;
       target.current = normalizedX(event.clientX, window.innerWidth);
       setPosition(Math.round(target.current * 100));
     };
     window.addEventListener("pointermove", move, { passive: true });
     return () => window.removeEventListener("pointermove", move);
-  }, [reduced, missing, visible]);
+  }, [reduced, motionReady, visible]);
   useEffect(() => {
-    if (!ready || missing || !visible) return;
+    if (!motionReady || !visible) return;
     let animation = 0;
     let previous = performance.now();
-    let requested = -1;
+    let requested = frames.posterIndex;
     const tick = (now: number) => {
       if (!document.hidden && (!reduced || explicitControl.current)) {
         current.current = reduced
           ? target.current
           : smoothPosition(current.current, target.current, now - previous);
-        const index = frameIndex(current.current, frames.count);
+        const index = frameIndex(current.current, atlas.count);
         if (requested !== index) {
-          pool.current?.setTarget(index);
+          setFrame(index);
           requested = index;
         }
       }
@@ -87,7 +92,7 @@ export default function Portrait({
     };
     animation = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animation);
-  }, [ready, missing, reduced, visible]);
+  }, [motionReady, reduced, visible]);
   const update = (value: number) => {
     explicitControl.current = true;
     target.current = value / 100;
@@ -101,13 +106,12 @@ export default function Portrait({
   };
   return (
     <div
-      className={`portrait-stage hero-portrait ${missing ? "is-placeholder" : ""} ${ready ? "portrait-ready" : ""}`}
+      className={`portrait-stage hero-portrait ${missing && !motionReady ? "is-placeholder" : ""} ${ready || motionReady ? "portrait-ready" : ""}`}
       ref={stage}
       onPointerDown={(event) => {
         if (
           event.pointerType !== "touch" ||
-          missing ||
-          !ready ||
+          !motionReady ||
           event.target instanceof HTMLInputElement
         )
           return;
@@ -137,25 +141,47 @@ export default function Portrait({
         {!missing && (
           <img
             ref={image}
-            className="portrait-video portrait-frame"
-            src={source}
+            className="portrait-video portrait-poster"
+            src={poster}
             width={frames.width}
             height={frames.height}
-            alt="Alaa Tawalbeh, standing in front of a blue studio background"
+            alt={
+              motionReady
+                ? ""
+                : "Alaa Tawalbeh, standing in front of a blue studio background"
+            }
+            aria-hidden={motionReady || undefined}
+            style={motionReady ? { visibility: "hidden" } : undefined}
             loading="eager"
             fetchPriority="high"
             decoding="async"
             onLoad={() => setReady(true)}
             onError={() => {
-              if (source !== poster) setSource(poster);
-              else {
-                setMissing(true);
-                setFailed(true);
-              }
+              setMissing(true);
+              setFailed(true);
             }}
           />
         )}
-        {(missing || !ready) && (
+        {motionReady && (
+          <div
+            className="portrait-video portrait-frame portrait-sprite"
+            role="img"
+            aria-label="Alaa Tawalbeh, standing in front of a blue studio background"
+            data-frame={String(frame).padStart(3, "0")}
+          >
+            <img
+              className="portrait-atlas"
+              src={atlasUrl}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              style={{
+                transform: `translate3d(-${((frame % atlas.columns) * 100) / atlas.columns}%, -${(Math.floor(frame / atlas.columns) * 100) / atlas.rows}%, 0)`,
+              }}
+            />
+          </div>
+        )}
+        {!motionReady && (missing || !ready) && (
           <div className="portrait-placeholder">
             <div className="portrait-reticle" aria-hidden="true">
               <span>AT</span>
@@ -186,7 +212,7 @@ export default function Portrait({
           min="0"
           max="100"
           value={position}
-          disabled={missing || !ready}
+          disabled={!motionReady}
           aria-label="Portrait head direction"
           aria-valuetext={
             position < 35
@@ -198,11 +224,15 @@ export default function Portrait({
           onChange={(event) => update(Number(event.target.value))}
         />
         <p className="mono">
-          {missing
+          {missing && !motionReady
             ? "PORTRAIT UNAVAILABLE"
-            : reduced
-              ? "USE THE SLIDER TO CHOOSE A FRAME"
-              : "MOVE YOUR CURSOR · SWIPE OR USE THE SLIDER"}
+            : !motionReady
+              ? motionFailed
+                ? "PORTRAIT VIEW"
+                : "PREPARING MOTION"
+              : reduced
+                ? "USE THE SLIDER TO CHOOSE A FRAME"
+                : "MOVE YOUR CURSOR · SWIPE OR USE THE SLIDER"}
         </p>
       </div>
     </div>

@@ -1561,6 +1561,19 @@ body {
 .hero-portrait .portrait-frame {
   opacity: 1;
 }
+.hero-portrait .portrait-video.portrait-sprite {
+  width: calc(var(--portrait-height) * 320 / 585);
+  overflow: hidden;
+}
+.portrait-atlas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 700%;
+  height: 700%;
+  max-width: none;
+  will-change: transform;
+}
 .hero-portrait .portrait-bottom {
   left: auto;
   right: 12%;

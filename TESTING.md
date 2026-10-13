@@ -3,13 +3,13 @@
 ## Automated checks
 
 - `npm install`: completed; lockfile committed.
-- `npm test`: 16 tests across 5 files. Covers absolute left/center/right frame mapping, smoothing, input clamping, frame-URL integration, zero-button touch swipes, slider input, blocked-video independence, missing/failed poster and CV handling, modal focus loops/restoration, intro progression/skip, reduced-motion readiness, latest-frame prioritization, failure retention, disposal, and the six-image cache bound.
+- `npm test`: 17 tests across 5 files. Covers absolute left/center/right frame mapping, smoothing, input clamping, atlas integration without per-movement requests, zero-button touch swipes, slider input, blocked-video independence, missing/failed poster and CV handling, modal focus loops/restoration, intro progression/skip, reduced-motion readiness, decode-before-motion gating, failure retention, cached-image handling, and disposal.
 - `npm run build`: TypeScript and production build passed.
 - Repository-path production build with `VITE_BASE_PATH=/alaa-cinematic-portfolio/`: passed.
 - Served that production build at `/alaa-cinematic-portfolio/` and confirmed the intro, main site, and bundled JavaScript/CSS load under the repository base.
 - `npm audit`: zero vulnerabilities at verification time.
 
-The image loader is simulated in unit tests. Browser inspection additionally confirmed real JPEG decoding and switching from `frame-000.jpg` to `frame-048.jpg` using the native slider. The hero has no video element or media-playback dependency.
+The image loader is simulated in unit tests. Browser inspection additionally checks real JPEG decoding and movement from frame 000 to 048 using the native slider. The hero has no video element or media-playback dependency.
 
 ## Browser inspection
 
@@ -35,7 +35,9 @@ The owner supplied `IMG_6816.MP4`, which is now committed unchanged at `public/m
 
 The owner reported an empty portrait on an iPhone 11 Pro. The original file is H.264 High / yuv420p with AAC audio. The old hero waited for `loadeddata` and kept the video transparent until that event arrived, so a browser that withheld initial video decoding could display nothing. The exact phone failure was not reproduced on physical hardware.
 
-The hero now uses 49 real JPEG frames extracted locally from the unchanged MP4. The eager frontal poster is visible independently of video events. Frame loading is serialized and bounded to six retained images; failures keep the current image. Touch handling accepts a zero-button pointer and cancels on pointer-up/cancel. `vh` fallback avoids depending on `svh` support. Local browser inspection at 375×812 confirmed the full-body image decoded at 464×848, movement between the real endpoint frames, no video element, and no browser errors.
+The hero now uses 49 real frames extracted locally from the unchanged MP4. The eager frontal poster is visible independently of video events. Touch handling accepts a zero-button pointer and cancels on pointer-up/cancel. `vh` fallback avoids depending on `svh` support. The subsequent stuttering report exposed a per-frame loader that could wait for changing targets during continuous movement. All frames now share one preloaded and decoded 7×7 atlas. Scrubbing only translates the bitmap; it does not fetch or decode a separate image per movement. Controls stay disabled while the atlas prepares, and a failed atlas leaves the poster visible. The 2240×4095 atlas is 726,585 bytes (approximately 35 MiB decoded); each visible frame is 320×585, with the whole body preserved.
+
+Local browser inspection at 375×812 confirmed the real atlas decoded at 2240×4095, the native slider reached frames 000 and 048 while retaining the same image URL, the full figure remained visible, and there was no horizontal overflow. Pointer motion over the range controls is ignored so it cannot override keyboard or slider input.
 
 ## Remaining asset/device checks
 

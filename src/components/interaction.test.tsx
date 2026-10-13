@@ -73,13 +73,14 @@ describe("portrait integration without video decoding", () => {
     expect(container.querySelector("video")).toBeNull();
     expect(play).not.toHaveBeenCalled();
   });
-  it("loads real frame URLs for absolute pointer X, slider and zero-button touch input", () => {
+  it("moves through decoded frames with no additional loads for pointer, slider or touch", async () => {
     let callback: FrameRequestCallback = () => {};
     vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
       callback = fn;
       return 1;
     });
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const requests: string[] = [];
     vi.stubGlobal(
       "Image",
       class {
@@ -88,7 +89,11 @@ describe("portrait integration without video decoding", () => {
         private value = "";
         set src(value: string) {
           this.value = value;
+          requests.push(value);
           this.onload?.();
+        }
+        decode() {
+          return Promise.resolve();
         }
         get src() {
           return this.value;
@@ -96,8 +101,12 @@ describe("portrait integration without video decoding", () => {
       },
     );
     const { container } = render(<Portrait available />);
-    const image = screen.getByRole("img");
-    fireEvent.load(image);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const image = container.querySelector(".portrait-frame")!;
+    const sheet = image.querySelector("img")!;
+    const source = sheet.getAttribute("src");
     const pointer = (x: number) => {
       const event = new Event("pointermove");
       Object.assign(event, { pointerType: "mouse", clientX: x });
@@ -112,16 +121,17 @@ describe("portrait integration without video decoding", () => {
     };
     pointer(0);
     settle();
-    expect(image.getAttribute("src")).toContain("frame-000.jpg");
+    expect(image.getAttribute("data-frame")).toBe("000");
+    expect(sheet.style.transform).toBe("translate3d(-0%, -0%, 0)");
     pointer(window.innerWidth / 2);
     settle();
-    expect(image.getAttribute("src")).toContain("frame-024.jpg");
+    expect(image.getAttribute("data-frame")).toBe("024");
     pointer(window.innerWidth);
     settle();
-    expect(image.getAttribute("src")).toContain("frame-048.jpg");
+    expect(image.getAttribute("data-frame")).toBe("048");
     fireEvent.change(screen.getByRole("slider"), { target: { value: "0" } });
     settle();
-    expect(image.getAttribute("src")).toContain("frame-000.jpg");
+    expect(image.getAttribute("data-frame")).toBe("000");
     const stage = container.querySelector(".portrait-stage")!;
     vi.spyOn(stage, "getBoundingClientRect").mockReturnValue({
       left: 0,
@@ -140,11 +150,32 @@ describe("portrait integration without video decoding", () => {
     touch("pointerdown", 0);
     touch("pointermove", 400);
     settle();
-    expect(image.getAttribute("src")).toContain("frame-048.jpg");
+    expect(image.getAttribute("data-frame")).toBe("048");
     touch("pointerup", 400);
     touch("pointermove", 0);
     settle();
-    expect(image.getAttribute("src")).toContain("frame-048.jpg");
+    expect(image.getAttribute("data-frame")).toBe("048");
+    expect(sheet.getAttribute("src")).toBe(source);
+    expect(requests).toHaveLength(1);
+  });
+  it("retains the poster if motion preparation fails", () => {
+    vi.stubGlobal(
+      "Image",
+      class {
+        onerror: (() => void) | null = null;
+        set src(_value: string) {
+          this.onerror?.();
+        }
+      },
+    );
+    render(<Portrait available />);
+    const poster = screen.getByRole("img");
+    fireEvent.load(poster);
+    expect(poster.getAttribute("src")).toContain("frame-024.jpg");
+    expect(screen.getByText("PORTRAIT VIEW")).toBeTruthy();
+    expect((screen.getByRole("slider") as HTMLInputElement).disabled).toBe(
+      true,
+    );
   });
   it("shows a clear fallback when the poster itself cannot load", () => {
     render(<Portrait available />);
