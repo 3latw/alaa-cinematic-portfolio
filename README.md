@@ -18,7 +18,7 @@ The intro's 2.3-second progress is explicitly an introduction sequence, not a ne
 
 ## Owner media checklist
 
-The owner's original `IMG_6816.MP4` is now included at `public/media/IMG_6816.MP4` (645,806 bytes, 464×848, approximately 3.87 seconds). It is displayed large at the top of the main site, with soft masks fading into the black hero background rather than a framed card. The CV PDF and project previews are still pending.
+The owner's original `IMG_6816.MP4` is now included at `public/media/IMG_6816.MP4` (645,806 bytes, 464×848, approximately 3.87 seconds). The full head-to-toe frame is shown at the top of the site using contain sizing. An extended studio-blue background blends into black, with soft video-edge masks. The desktop figure sits beside the name; the mobile name follows the full figure so it does not cover the legs. The CV PDF and project previews are still pending.
 
 - To replace the portrait, use **`public/media/IMG_6816.MP4`**. Exact casing matters on GitHub Pages. Prefer an H.264 MP4 with frequent keyframes and fast-start metadata for responsive seeking.
 - Add the real résumé at **`public/files/Alaa-Ziad-Tawalbeh-CV.pdf`**. No substitute résumé is generated.

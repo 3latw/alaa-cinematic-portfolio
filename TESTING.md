@@ -33,6 +33,8 @@ The owner supplied `IMG_6816.MP4`, which is now committed unchanged at `public/m
 
 ## Remaining asset/device checks
 
+The full-body layout revision uses `object-fit: contain` and the source aspect ratio, with an expanded studio-blue hero background fading into black. Desktop 1440×900 showed the whole video between y=106 and y=790. Mobile 390×844 showed the video ending at y=587.5 and the name starting below it at y=688.8. Minimum mobile 320×568 showed the video ending at y=560, with no horizontal overflow. The original video remains unchanged.
+
 - Verify swipe and slider on physical touch devices; the automated swipe test uses a simulated pointer event.
 - Confirm MP4 scrubbing latency, orientation, and cropping on iOS Safari and Android. Verify muted/paused behavior and no recurring playback.
 - Confirm the real CV downloads successfully, opens as a valid PDF, and respects the GitHub Pages repository base.
